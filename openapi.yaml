@@ -3,11 +3,46 @@ info:
   title: Image Scanning API
   version: 1.0.0
 
+components:
+  schemas:
+    BuildContext:
+      type: object
+      required:
+        - build_id
+        - build_name
+        - build_repo
+      properties:
+        build_id:
+          type: string
+          description: Unique build identifier
+          example: "build-12345"
+        build_name:
+          type: string
+          description: Name of the build
+          example: "prod-release-v1.2.3"
+        build_repo:
+          type: string
+          description: Repository URL or name
+          example: "github.com/myorg/myrepo"
+    
+    ScanRequest:
+      type: object
+      properties:
+        scan_depth:
+          type: string
+          enum: [shallow, medium, deep]
+          default: medium
+          description: Depth of the scan
+        build_context:
+          $ref: '#/components/schemas/BuildContext'
+
 paths:
   /scan/{image_name}:
     post:
       operationId: controller.scan_image
       summary: Scan an image
+      description: |
+        Scans the specified image with optional parameters.
       parameters:
         - name: image_name
           in: path
@@ -15,28 +50,35 @@ paths:
           schema:
             type: string
           description: Name of the image to scan
+          example: "ubuntu:latest"
       requestBody:
-        required: false  # Make it optional
+        required: false
         content:
           application/json:
             schema:
-              type: object
-              example: {}
-              # properties:
-                # scan_depth:
-                #   type: string
-                #   enum: [shallow, medium, deep]
-                #   description: Depth of the scan
-              #   build_id:
-              #     type: string
-              #     description: Build ID for tracking
-              #   build_project:
-              #     type: string
-              #     description: Project name for the build
-              # # No required fields - all are optional
+              $ref: '#/components/schemas/ScanRequest'
+            examples:
+              empty:
+                summary: Empty body (default)
+                value: {}
+              with_build_context:
+                summary: With build context
+                value:
+                  build_context:
+                    build_id: "build-12345"
+                    build_name: "prod-release-v1.2.3"
+                    build_repo: "github.com/myorg/myrepo"
+              full:
+                summary: Complete example
+                value:
+                  scan_depth: "deep"
+                  build_context:
+                    build_id: "build-12345"
+                    build_name: "prod-release-v1.2.3"
+                    build_repo: "github.com/myorg/myrepo"
       responses:
         '200':
-          description: Scan results
+          description: Scan completed successfully
           content:
             application/json:
               schema:
@@ -48,11 +90,20 @@ paths:
                     type: string
                   scan_depth:
                     type: string
-                  build_id:
-                    type: string
-                  build_project:
-                    type: string
+                  build_context:
+                    $ref: '#/components/schemas/BuildContext'
                   result:
                     type: object
         '400':
-          description: Bad request
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: array

@@ -1,52 +1,74 @@
-def scan_image(image_name, body=None):
+from typing import Optional
+from models import BuildContext, ScanRequest
+from pydantic import ValidationError
+
+
+def scan_image(image_name: str, body: Optional[dict] = None):
     """
-    Scan an image with the given name and optional parameters
+    Scan an image with optional parameters
     
     Args:
         image_name: Name of the image (from path parameter)
-        body: Optional request body with scan_depth, build_id, build_project
+        body: Optional request body with scan parameters and build context
     """
-    # Handle empty or None body - set defaults
-    if body is None:
+    # Handle empty or None body
+    if body is None or body == {}:
         body = {}
     
-    # Extract parameters with defaults
-    build_id = body.get('build_id')
-    build_project = body.get('build_project')
+    try:
+        # Parse and validate request body using Pydantic
+        scan_request = ScanRequest(**body)
+        
+        # Extract validated data
+        build_context = scan_request.build_context
+        
+    except ValidationError as e:
+        # Return validation errors
+        return {
+            "status": "error",
+            "message": "Validation failed",
+            "errors": [
+                {
+                    "field": ".".join(str(loc) for loc in err["loc"]),
+                    "message": err["msg"],
+                    "type": err["type"]
+                }
+                for err in e.errors()
+            ]
+        }, 400
     
     # Perform the actual scan
-    result = perform_scan(image_name, build_id, build_project)
+    result = perform_scan(image_name, build_context)
     
-    # Build response - only include fields that have values
+    # Build response
     response = {
         "status": "success",
         "image_name": image_name,
         "result": result
     }
     
-    # Add optional fields only if they were provided
-    if build_id:
-        response["build_id"] = build_id
-    if build_project:
-        response["build_project"] = build_project
+    # Include build_context in response if it was provided
+    if build_context:
+        response["build_context"] = build_context.model_dump()
     
     return response, 200
 
 
-def perform_scan(image_name, build_id=None, build_project=None):
+def perform_scan(
+    image_name: str,
+    build_context: Optional[BuildContext] = None
+):
     """
     Actual scanning logic
     
     Args:
         image_name: Name of the image to scan
         scan_depth: Depth of scan (shallow, medium, deep)
-        build_id: Optional build ID for tracking
-        build_project: Optional project name
+        build_context: Optional build context information
     
     Returns:
         Dictionary with scan results
     """
-    # Your actual scanning logic here
     scan_result = {
         "scanned_at": "2026-02-03T10:30:00Z",
         "findings": [
@@ -59,11 +81,12 @@ def perform_scan(image_name, build_id=None, build_project=None):
     }
     
     # Add build tracking info if provided
-    if build_id or build_project:
-        scan_result["build_info"] = {}
-        if build_id:
-            scan_result["build_info"]["build_id"] = build_id
-        if build_project:
-            scan_result["build_info"]["build_project"] = build_project
+    if build_context:
+        scan_result["build_info"] = {
+            "build_id": build_context.build_id,
+            "build_name": build_context.build_name,
+            "build_repo": build_context.build_repo,
+            "tracked_at": "2026-02-03T10:30:00Z"
+        }
     
     return scan_result

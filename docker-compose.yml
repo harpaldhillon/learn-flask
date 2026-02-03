@@ -14,5 +14,5 @@ services:
     environment:
       - FLASK_ENV=development
       - PYTHONUNBUFFERED=1
-      - ENABLE_DEBUGPY=1  # Enable debugging
+      - ENABLE_DEBUGPY=0  # Enable debugging by setting to 1
     restart: unless-stopped
