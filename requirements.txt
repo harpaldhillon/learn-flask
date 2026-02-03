@@ -1,0 +1,6 @@
+connexion[flask,swagger-ui]>=3.0.0
+flask>=3.0.0
+pyyaml>=6.0
+werkzeug>=3.0.0
+uvicorn[standard]>=0.24.0
+debugpy>=1.8.0  # Add this

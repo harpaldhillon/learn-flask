@@ -1,0 +1,58 @@
+openapi: 3.0.0
+info:
+  title: Image Scanning API
+  version: 1.0.0
+
+paths:
+  /scan/{image_name}:
+    post:
+      operationId: controller.scan_image
+      summary: Scan an image
+      parameters:
+        - name: image_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the image to scan
+      requestBody:
+        required: false  # Make it optional
+        content:
+          application/json:
+            schema:
+              type: object
+              example: {}
+              # properties:
+                # scan_depth:
+                #   type: string
+                #   enum: [shallow, medium, deep]
+                #   description: Depth of the scan
+              #   build_id:
+              #     type: string
+              #     description: Build ID for tracking
+              #   build_project:
+              #     type: string
+              #     description: Project name for the build
+              # # No required fields - all are optional
+      responses:
+        '200':
+          description: Scan results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  image_name:
+                    type: string
+                  scan_depth:
+                    type: string
+                  build_id:
+                    type: string
+                  build_project:
+                    type: string
+                  result:
+                    type: object
+        '400':
+          description: Bad request
